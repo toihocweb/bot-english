@@ -2,39 +2,85 @@ const request = require("request-promise");
 const cheerio = require("cheerio");
 const login = require("facebook-chat-api");
 const fs = require("fs");
-const readline = require("readline");
 
+const detectVi = (str) => {
+  const AccentsMap = [
+    "aàảãáạăằẳẵắặâầẩẫấậ",
+    "AÀẢÃÁẠĂẰẲẴẮẶÂẦẨẪẤẬ",
+    "dđ",
+    "DĐ",
+    "eèẻẽéẹêềểễếệ",
+    "EÈẺẼÉẸÊỀỂỄẾỆ",
+    "iìỉĩíị",
+    "IÌỈĨÍỊ",
+    "oòỏõóọôồổỗốộơờởỡớợ",
+    "OÒỎÕÓỌÔỒỔỖỐỘƠỜỞỠỚỢ",
+    "uùủũúụưừửữứự",
+    "UÙỦŨÚỤƯỪỬỮỨỰ",
+    "yỳỷỹýỵ",
+    "YỲỶỸÝỴ",
+  ];
+  for (var i = 0; i < AccentsMap.length; i++) {
+    var re = new RegExp("[" + AccentsMap[i].substr(1) + "]", "g");
+    if (re.test(str)) {
+      return true;
+    }
+  }
+  return false;
+};
 login(
   { appState: JSON.parse(fs.readFileSync("appstate.json", "utf8")) },
   (err, api) => {
-    api.setOptions({
-      selfListen: true,
-      logLevel: "silent",
-      updatePresence: false,
-    });
     if (err) return console.error(err);
-    // Here you can use the api
-    api.listen((err, message) => {
+
+    api.setOptions({ listenEvents: true, selfListen: true });
+
+    var stopListening = api.listenMqtt((err, event) => {
       if (err) return console.error(err);
-      let msg = message.body;
-      if (message.isGroup) {
-        if (typeof msg === "string") {
-          console.log(msg);
-        }
+
+      switch (event.type) {
+        case "message":
+          // if (event.body === "/stop") {
+          //   api.sendMessage("Goodbye...", event.threadID);
+          //   return stopListening();
+          // }
+          if (event.body.startsWith("/")) {
+            let word = event.body.slice(1);
+            glosble(word)
+              .then((data) => {
+                api.sendMessage("Results: " + data.join("😄"), event.threadID);
+              })
+              .catch((err) => api.sendMessage("no results", event.threadID));
+          }
+          // console.log(event.threadID);
+
+          break;
+        case "event":
+          console.log(event);
+          break;
       }
     });
   }
 );
 
-const glosble = async (word) => {
-  const url = "https://glosbe.com/en/vi/dadsadas";
+const glosble = (word) => {
+  const vi = detectVi(word);
+  const url = `https://glosbe.com/${vi ? "vi" : "en"}/${
+    vi ? "en" : "vi"
+  }/${word}`;
 
-  const rs = await request(url).catch((err) =>
-    console.log("can not find this world")
-  );
-  //   console.log(rs);
-  //   const $ = cheerio.load(rs);
-  //   $(".phr").each(function (i, elm) {
-  //     console.log($(this).text()); // for testing do text()
-  //   });
+  const finalUrl = encodeURI(url);
+
+  return new Promise((resolve, reject) => {
+    request(finalUrl)
+      .then((data) => {
+        const $ = cheerio.load(data);
+        let list = [];
+        $(".phr").each(function (i, elm) {
+          list.push($(this).text());
+        });
+        resolve(list);
+      })
+      .catch((err) => reject(err));
+  });
 };
