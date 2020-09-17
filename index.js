@@ -40,19 +40,23 @@ login(
 
       switch (event.type) {
         case "message":
-          // if (event.body === "/stop") {
-          //   api.sendMessage("Goodbye...", event.threadID);
-          //   return stopListening();
-          // }
-          if (event.body.startsWith("/")) {
-            let word = event.body.slice(1);
-            glosble(word)
+          if (event.body.startsWith("/def")) {
+            let word = event.body.slice(4).trim();
+            def(word)
               .then((data) => {
-                api.sendMessage("Results: " + data.join("😄"), event.threadID);
+                api.sendMessage("😂 " + data, event.threadID);
               })
               .catch((err) => api.sendMessage("no results", event.threadID));
+          } else {
+            if (event.body.startsWith("/")) {
+              let word = event.body.slice(1);
+              glosble(word)
+                .then((data) => {
+                  api.sendMessage(data.join("😄"), event.threadID);
+                })
+                .catch((err) => api.sendMessage("no results", event.threadID));
+            }
           }
-          // console.log(event.threadID);
 
           break;
         case "event":
@@ -82,5 +86,22 @@ const glosble = (word) => {
         resolve(list);
       })
       .catch((err) => reject(err));
+  });
+};
+
+const def = (word) => {
+  const vi = detectVi(word);
+  const url = `https://www.yourdictionary.com/${word}`;
+  return new Promise((resolve, reject) => {
+    if (vi) {
+      resolve("no result");
+    } else {
+      request(url)
+        .then((data) => {
+          const $ = cheerio.load(data);
+          resolve($(".custom_entry").text());
+        })
+        .catch((err) => reject(err));
+    }
   });
 };
