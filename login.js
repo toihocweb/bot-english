@@ -7,8 +7,9 @@ var rl = readline.createInterface({
   output: process.stdout,
 });
 
-const obj = { email: "buidinhnhat2009@gmail.com", password: "nguoihung9999" };
-login(obj, (err, api) => {
+const acc = { email: process.env.EMAIL, password: process.env.PASSWORD };
+
+login(acc, (err, api) => {
   if (err) {
     switch (err.error) {
       case "login-approval":
