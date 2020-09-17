@@ -69,6 +69,7 @@ login(
                 .catch((err) =>
                   api.sendMessage("😗 no results", event.threadID)
                 );
+              break;
           }
 
           break;
