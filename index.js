@@ -2,6 +2,7 @@ const request = require("request-promise");
 const cheerio = require("cheerio");
 const login = require("facebook-chat-api");
 const fs = require("fs");
+const { userInfo } = require("os");
 
 const detectVi = (str) => {
   const AccentsMap = [
@@ -40,27 +41,38 @@ login(
 
       switch (event.type) {
         case "message":
-          if (event.body.startsWith("/def")) {
-            let word = event.body.slice(4).trim();
-            def(word)
-              .then((data) => {
-                api.sendMessage("😂 " + data, event.threadID);
-              })
-              .catch((err) => api.sendMessage("no results", event.threadID));
-          } else {
-            if (event.body.startsWith("/")) {
-              let word = event.body.slice(1);
-              glosble(word)
+          const getCommand = event.body.split(" ");
+          switch (getCommand[0]) {
+            case "/def":
+              def(getCommand[1])
                 .then((data) => {
-                  api.sendMessage(data.join("😄"), event.threadID);
+                  api.sendMessage("😂 " + data, event.threadID);
                 })
-                .catch((err) => api.sendMessage("no results", event.threadID));
-            }
+                .catch((err) =>
+                  api.sendMessage("😗 no results", event.threadID)
+                );
+              break;
+            case "/ex":
+              getEx(getCommand[1])
+                .then((data) => {
+                  api.sendMessage("😂 " + data.join("😉"), event.threadID);
+                })
+                .catch((err) =>
+                  api.sendMessage("😗 no results", event.threadID)
+                );
+              break;
+            default:
+              glosble(getCommand[0])
+                .then((data) => {
+                  api.sendMessage("😗 " + data.join("😄"), event.threadID);
+                })
+                .catch((err) =>
+                  api.sendMessage("😗 no results", event.threadID)
+                );
           }
 
           break;
         case "event":
-          console.log(event);
           break;
       }
     });
@@ -100,6 +112,27 @@ const def = (word) => {
         .then((data) => {
           const $ = cheerio.load(data);
           resolve($(".custom_entry").text());
+        })
+        .catch((err) => reject(err));
+    }
+  });
+};
+
+const getEx = (word) => {
+  const vi = detectVi(word);
+  const url = `https://sentence.yourdictionary.com/${word}`;
+  return new Promise((resolve, reject) => {
+    if (vi) {
+      resolve("😁 no result");
+    } else {
+      request(url)
+        .then((data) => {
+          let list = [];
+          const $ = cheerio.load(data);
+          for (let i = 0; i < 3; i++) {
+            list.push($(".sentence.component").eq(i).text());
+          }
+          resolve(list);
         })
         .catch((err) => reject(err));
     }
