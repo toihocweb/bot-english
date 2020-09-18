@@ -41,30 +41,31 @@ login(
 
       switch (event.type) {
         case "message":
-          const getCommand = event.body.split(" ");
-          getCommand[0] === "/def"
-            ? def(getCommand[1])
+          event.body.startsWith("/def")
+            ? def(event.body.slice(4).trim())
                 .then((data) => {
                   api.sendMessage("😂 " + data, event.threadID);
                 })
                 .catch((err) =>
                   api.sendMessage("😗 no results", event.threadID)
                 )
-            : getCommand[0] === "/ex"
-            ? getEx(getCommand[1])
+            : event.body.startsWith("/ex")
+            ? getEx(event.body.slice(3).trim())
                 .then((data) => {
                   api.sendMessage("😂 " + data.join("😉"), event.threadID);
                 })
                 .catch((err) =>
                   api.sendMessage("😗 no results", event.threadID)
                 )
-            : glosble(getCommand[0])
+            : event.body.startsWith("/")
+            ? glosble(event.body.slice(1))
                 .then((data) => {
                   api.sendMessage("😗 " + data.join("😄"), event.threadID);
                 })
                 .catch((err) =>
                   api.sendMessage("😗 no results", event.threadID)
-                );
+                )
+            : null;
           break;
         case "event":
           break;
