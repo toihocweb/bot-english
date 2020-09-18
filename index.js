@@ -124,7 +124,7 @@ const getEx = (word) => {
         .then((data) => {
           let list = [];
           const $ = cheerio.load(data);
-          for (let i = 0; i < 3; i++) {
+          for (let i = 0; i < 4; i++) {
             list.push($(".sentence.component").eq(i).text());
           }
           resolve(list);
