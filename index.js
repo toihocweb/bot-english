@@ -82,12 +82,14 @@ const start = () => {
                 .catch((err) =>
                   api.sendMessage("💩 no results", event.threadID)
                 );
+              break;
             case "/help":
               const helps = [
                 `💀 /ex [word] : -> in ví dụ cho word`,
                 `💀 /en [word] : -> dịch word sang English`,
                 `💀 /vi [word] : -> dịch word sang Vietnames`,
               ];
+              break;
             case "/so":
               getSound(word.join(" "), function (data) {
                 if (data) {
