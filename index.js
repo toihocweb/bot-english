@@ -42,7 +42,7 @@ const download = function (url, dest, cb) {
   });
 };
 
-const pp = puppeteer.launch({ headless: false });
+const pp = puppeteer.launch();
 
 const start = () => {
   login(
