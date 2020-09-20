@@ -2,7 +2,8 @@ const request = require("request-promise");
 const cheerio = require("cheerio");
 const login = require("facebook-chat-api");
 const fs = require("fs");
-const { userInfo } = require("os");
+const puppeteer = require("puppeteer");
+const https = require("https");
 
 const detectVi = (str) => {
   const AccentsMap = [
@@ -21,64 +22,122 @@ const detectVi = (str) => {
     "yỳỷỹýỵ",
     "YỲỶỸÝỴ",
   ];
-  for (var i = 0; i < AccentsMap.length; i++) {
-    var re = new RegExp("[" + AccentsMap[i].substr(1) + "]", "g");
+  for (let i = 0; i < AccentsMap.length; i++) {
+    let re = new RegExp("[" + AccentsMap[i].substr(1) + "]", "g");
     if (re.test(str)) {
       return true;
     }
   }
   return false;
 };
-login(
-  { appState: JSON.parse(fs.readFileSync("appstate.json", "utf8")) },
-  (err, api) => {
-    if (err) return console.error(err);
 
-    api.setOptions({ listenEvents: true, selfListen: true });
+const download = function (url, dest, cb) {
+  var file = fs.createWriteStream(dest);
 
-    var stopListening = api.listenMqtt((err, event) => {
+  https.get(url, function (response) {
+    response.pipe(file);
+    file.on("finish", function () {
+      file.close(cb);
+    });
+  });
+};
+
+const pp = puppeteer.launch({ headless: false });
+
+const start = () => {
+  login(
+    { appState: JSON.parse(fs.readFileSync("appstate.json", "utf8")) },
+    (err, api) => {
       if (err) return console.error(err);
+      api.setOptions({ listenEvents: true, selfListen: true });
+      const stopListening = api.listenMqtt((err, event) => {
+        if (err) return console.error(err);
+        if (event.type === "message") {
+          const commands = event.body.trim().split(" ");
+          const [cmd, ...word] = commands;
+          switch (cmd) {
+            case "/en":
+              glosble(word.join(" "), "en")
+                .then((data) => {
+                  api.sendMessage("😗 " + data.join("\n💩"), event.threadID);
+                })
+                .catch((err) =>
+                  api.sendMessage("💩 no results", event.threadID)
+                );
+              break;
+            case "/vi":
+              glosble(word.join(" "), "vi")
+                .then((data) => {
+                  api.sendMessage("😗 " + data.join("\n💩"), event.threadID);
+                })
+                .catch((err) =>
+                  api.sendMessage("💩 no results", event.threadID)
+                );
+              break;
+            case "/ex":
+              getEx(word.join(" "))
+                .then((data) => {
+                  api.sendMessage("😗 " + data.join("\n😀"), event.threadID);
+                })
+                .catch((err) =>
+                  api.sendMessage("💩 no results", event.threadID)
+                );
+            case "/help":
+              const helps = [
+                `💀 /ex [word] : -> in ví dụ cho word`,
+                `💀 /en [word] : -> dịch word sang English`,
+                `💀 /vi [word] : -> dịch word sang Vietnames`,
+              ];
+            case "/so":
+              getSound(word.join(" "), function (data) {
+                if (data) {
+                  const msg = {
+                    body: `😂 ${data}`,
+                    attachment: fs.createReadStream(
+                      `${__dirname}/sounds/${data}.mp3`
+                    ),
+                  };
+                  api.sendMessage(msg, event.threadID);
+                } else {
+                  api.sendMessage("Not found!", event.threadID);
+                }
+              });
+              break;
+          }
+        }
+      });
+    }
+  );
+};
 
-      switch (event.type) {
-        case "message":
-          event.body.startsWith("/def")
-            ? def(event.body.slice(4).trim())
-                .then((data) => {
-                  api.sendMessage("😂 " + data, event.threadID);
-                })
-                .catch((err) =>
-                  api.sendMessage("😗 no results", event.threadID)
-                )
-            : event.body.startsWith("/ex")
-            ? getEx(event.body.slice(3).trim())
-                .then((data) => {
-                  api.sendMessage("😂 " + data.join("😉"), event.threadID);
-                })
-                .catch((err) =>
-                  api.sendMessage("😗 no results", event.threadID)
-                )
-            : event.body.startsWith("/")
-            ? glosble(event.body.slice(1))
-                .then((data) => {
-                  api.sendMessage("😗 " + data.join("😄"), event.threadID);
-                })
-                .catch((err) =>
-                  api.sendMessage("😗 no results", event.threadID)
-                )
-            : null;
-          break;
-        case "event":
-          break;
+const getSound = (word, cb) => {
+  const vi = detectVi(word);
+  const url = `https://dict.laban.vn/ajax/getsound?accent=uk&word=${word}`;
+
+  if (vi) {
+    resolve("😀 i cannot speak vietnames");
+  } else {
+    pp.then(async (browser) => {
+      const page = await browser.newPage();
+      const response = await page.goto(url);
+      const source = await response.text();
+      const rs = source.match(/\"data\"\:\"(.*?)\"/);
+      if (rs[1]) {
+        download(rs[1], __dirname + `/sounds/${word}.mp3`, function () {
+          cb(word);
+        });
+      } else {
+        cb(false);
       }
+      page.close();
     });
   }
-);
+};
 
-const glosble = (word) => {
-  const vi = detectVi(word);
-  const url = `https://glosbe.com/${vi ? "vi" : "en"}/${
-    vi ? "en" : "vi"
-  }/${word}`;
+const glosble = (word, lang) => {
+  // const vi = detectVi(word);
+
+  const url = `https://glosbe.com/${lang === "en" ? "vi/en" : "en/vi"}/${word}`;
 
   const finalUrl = encodeURI(url);
 
@@ -87,6 +146,7 @@ const glosble = (word) => {
       .then((data) => {
         const $ = cheerio.load(data);
         let list = [];
+        list.push($(".defmetas").text());
         $(".phr").each(function (i, elm) {
           list.push($(this).text());
         });
@@ -115,21 +175,31 @@ const def = (word) => {
 
 const getEx = (word) => {
   const vi = detectVi(word);
-  const url = `https://sentence.yourdictionary.com/${word}`;
+  const url = `https://dict.laban.vn/find?query=${word}`;
   return new Promise((resolve, reject) => {
     if (vi) {
       resolve("😁 no result");
     } else {
-      request(url)
-        .then((data) => {
-          let list = [];
-          const $ = cheerio.load(data);
-          for (let i = 0; i < 4; i++) {
-            list.push($(".sentence.component").eq(i).text());
-          }
-          resolve(list);
-        })
-        .catch((err) => reject(err));
+      pp.then(async (browser) => {
+        const page = await browser.newPage();
+        const response = await page.goto(url);
+        const $ = cheerio.load(await response.text());
+        let list = [];
+        for (let i = 0; i < 5; i++) {
+          list.push(
+            $("#content_selectable .color-light-blue.margin25.m-top15")
+              .eq(i)
+              .text()
+          );
+        }
+
+        resolve(list);
+        page.close();
+      });
     }
   });
 };
+
+start();
+// getSound("hello");
+// glosble("code");
