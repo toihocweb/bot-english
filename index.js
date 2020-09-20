@@ -42,7 +42,7 @@ const download = function (url, dest, cb) {
   });
 };
 
-const browser = puppeteer.launch({ args: ["--no-sandbox"] });
+const pp = puppeteer.launch({ args: ["--no-sandbox"] });
 
 const start = () => {
   login(
