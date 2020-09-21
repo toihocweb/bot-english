@@ -4,8 +4,6 @@ const login = require("facebook-chat-api");
 const fs = require("fs");
 const puppeteer = require("puppeteer");
 const https = require("https");
-const { resolve } = require("path");
-const { Recoverable } = require("repl");
 
 const detectVi = (str) => {
   const AccentsMap = [
@@ -217,7 +215,7 @@ const getEx = (word) => {
 
 const getGirl = (name, cb) => {
   const url = "https://gxcl.info/api.php";
-  request.get(url).then((data) => {
+  request(url).then((data) => {
     const rs = data.match(/"link":"(.*?)"/);
     if (rs[1]) {
       download(rs[1], __dirname + `/girls/${name}.jpg`, function () {
