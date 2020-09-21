@@ -216,7 +216,7 @@ const getEx = (word) => {
 const getGirl = (name, cb) => {
   const url = "https://gxcl.info/api.php";
   request(url).then((data) => {
-    const rs = data.match(/"link":"(.*?)"/);
+    const rs = data.match(/\"link\"\:\"(.*?)\"/);
     if (rs[1]) {
       download(rs[1], __dirname + `/girls/${name}.jpg`, function () {
         cb(name);
