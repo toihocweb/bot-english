@@ -4,9 +4,8 @@ const login = require("facebook-chat-api");
 const fs = require("fs");
 const puppeteer = require("puppeteer");
 const https = require("https");
-// const dl = require("download-file");
 const download = require("./download");
-
+const helps = require("./help");
 const detectVi = (str) => {
   const AccentsMap = [
     "aàảãáạăằẳẵắặâầẩẫấậ",
@@ -32,24 +31,6 @@ const detectVi = (str) => {
   }
   return false;
 };
-
-// const download = function (url, dest, cb) {
-//   var file = fs.createWriteStream(dest);
-//   try {
-//     var request = https
-//       .get(url, function (response) {
-//         response.pipe(file);
-//         file.on("finish", function () {
-//           file.close(cb);
-//         });
-//       })
-//       .on("error", function (error) {
-//         console.log("a", error.message);
-//       });
-//   } catch (e) {
-//     console.log("b", e);
-//   }
-// };
 
 const pp = puppeteer.launch({ args: ["--no-sandbox"] });
 
@@ -92,12 +73,17 @@ const start = () => {
                   api.sendMessage("💩 no results", event.threadID)
                 );
               break;
+            case "/def":
+              def(word.join(" "))
+                .then((data) => {
+                  api.sendMessage("😗 " + data, event.threadID);
+                })
+                .catch((err) =>
+                  api.sendMessage("💩 no results", event.threadID)
+                );
+              break;
             case "/help":
-              const helps = [
-                `💀 /ex [word] : -> in ví dụ cho word`,
-                `💀 /en [word] : -> dịch word sang English`,
-                `💀 /vi [word] : -> dịch word sang Vietnames`,
-              ];
+              api.sendMessage(helps.join("\n"), event.threadID);
               break;
             case "/so":
               getSound(word.join(" "), function (data) {
@@ -113,6 +99,19 @@ const start = () => {
                   api.sendMessage("Not found!", event.threadID);
                 }
               });
+              break;
+            case "/rd":
+              rdSentences(...word)
+                .then((data) => {
+                  if (data.length) {
+                    api.sendMessage(`😁 ${data.join("\n")}`, event.threadID);
+                  } else {
+                    api.sendMessage(`💩 no results`, event.threadID);
+                  }
+                })
+                .catch((err) =>
+                  api.sendMessage("💩 no results", event.threadID)
+                );
               break;
             case "/girl":
               const name = new Date().getTime();
@@ -233,21 +232,29 @@ const getGirl = (name, cb) => {
         console.log();
         cb(name);
       });
-      // var options = {
-      //   directory: `${__dirname}/girls/`,
-      //   filename: `${name}.jpg`,
-      // };
-      // console.log(__dirname);
-      // dl(rs[1], options, function (err) {
-      //   if (err) throw err;
-      //   cb(name);
-      // });
     } else {
       cb(false);
     }
   });
 };
 
+const rdSentences = (contain = "", quantity = 4, count = 10) => {
+  const url = `https://www.randomwordgenerator.org/Random/sentence_generator/quantity/${quantity}/count/${count}/contain/${contain}`;
+  return new Promise((resolve, reject) => {
+    request(url)
+      .then((data) => {
+        const $ = cheerio.load(data);
+        const list = [];
+        $(".res-sentence").each(function (idx, val) {
+          list.push($(this).text());
+        });
+        resolve(list);
+      })
+      .catch((err) => reject(err));
+  });
+};
+
 start();
+// rdSentences();
 // getSound("hello");
 // glosble("code");
