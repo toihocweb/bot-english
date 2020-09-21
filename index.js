@@ -4,6 +4,8 @@ const login = require("facebook-chat-api");
 const fs = require("fs");
 const puppeteer = require("puppeteer");
 const https = require("https");
+const { resolve } = require("path");
+const { Recoverable } = require("repl");
 
 const detectVi = (str) => {
   const AccentsMap = [
@@ -105,6 +107,17 @@ const start = () => {
                 }
               });
               break;
+            case "/girl":
+              const name = new Date().getTime();
+              getGirl(name, function (a) {
+                const msg = {
+                  attachment: fs.createReadStream(
+                    `${__dirname}/girls/${a}.jpg`
+                  ),
+                };
+                api.sendMessage(msg, event.threadID);
+              });
+              break;
           }
         }
       });
@@ -114,7 +127,7 @@ const start = () => {
 
 const getSound = (word, cb) => {
   const vi = detectVi(word);
-  const url = `https://dict.laban.vn/ajax/getsound?accent=uk&word=${word}`;
+  const url = `https://dict.laban.vn/ajax/getsound?accent=us&word=${word}`;
 
   if (vi) {
     resolve("😀 i cannot speak vietnames");
@@ -198,6 +211,20 @@ const getEx = (word) => {
         resolve(list);
         page.close();
       });
+    }
+  });
+};
+
+const getGirl = (name, cb) => {
+  const url = "https://gxcl.info/api.php";
+  request.get(url).then((data) => {
+    const rs = data.match(/"link":"(.*?)"/);
+    if (rs[1]) {
+      download(rs[1], __dirname + `/girls/${name}.jpg`, function () {
+        cb(name);
+      });
+    } else {
+      cb(false);
     }
   });
 };
