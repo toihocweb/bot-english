@@ -4,6 +4,7 @@ const login = require("facebook-chat-api");
 const fs = require("fs");
 const puppeteer = require("puppeteer");
 const https = require("https");
+const dl = require("download-file");
 
 const detectVi = (str) => {
   const AccentsMap = [
@@ -218,7 +219,17 @@ const getGirl = (name, cb) => {
   request(url).then((data) => {
     const rs = data.match(/\"link\"\:\"(.*?)\"/);
     if (rs[1]) {
-      download(rs[1], __dirname + `/girls/${name}.jpg`, function () {
+      // download(rs[1], __dirname + `/girls/${name}.jpg`, function () {
+      //   console.log();
+      //   cb(name);
+      // });
+      var options = {
+        directory: `${__dirname}/girls/`,
+        filename: `${name}.jpg`,
+      };
+
+      dl(rs[1], options, function (err) {
+        if (err) throw err;
         cb(name);
       });
     } else {
@@ -226,6 +237,9 @@ const getGirl = (name, cb) => {
     }
   });
 };
+
+try {
+} catch (error) {}
 
 start();
 // getSound("hello");
