@@ -34,13 +34,20 @@ const detectVi = (str) => {
 
 const download = function (url, dest, cb) {
   var file = fs.createWriteStream(dest);
-
-  https.get(url, function (response) {
-    response.pipe(file);
-    file.on("finish", function () {
-      file.close(cb);
-    });
-  });
+  try {
+    var request = https
+      .get(url, function (response) {
+        response.pipe(file);
+        file.on("finish", function () {
+          file.close(cb);
+        });
+      })
+      .on("error", function (error) {
+        console.log("a", error.message);
+      });
+  } catch (e) {
+    console.log("b", e);
+  }
 };
 
 const pp = puppeteer.launch({ args: ["--no-sandbox"] });
@@ -219,27 +226,24 @@ const getGirl = (name, cb) => {
   request(url).then((data) => {
     const rs = data.match(/\"link\"\:\"(.*?)\"/);
     if (rs[1]) {
-      // download(rs[1], __dirname + `/girls/${name}.jpg`, function () {
-      //   console.log();
-      //   cb(name);
-      // });
-      var options = {
-        directory: `${__dirname}/girls/`,
-        filename: `${name}.jpg`,
-      };
-
-      dl(rs[1], options, function (err) {
-        if (err) throw err;
+      download(rs[1], __dirname + `/girls/${name}.jpg`, function () {
+        console.log();
         cb(name);
       });
+      // var options = {
+      //   directory: `${__dirname}/girls/`,
+      //   filename: `${name}.jpg`,
+      // };
+      // console.log(__dirname);
+      // dl(rs[1], options, function (err) {
+      //   if (err) throw err;
+      //   cb(name);
+      // });
     } else {
       cb(false);
     }
   });
 };
-
-try {
-} catch (error) {}
 
 start();
 // getSound("hello");
