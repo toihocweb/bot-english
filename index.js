@@ -4,7 +4,8 @@ const login = require("facebook-chat-api");
 const fs = require("fs");
 const puppeteer = require("puppeteer");
 const https = require("https");
-const dl = require("download-file");
+// const dl = require("download-file");
+const download = require("./download");
 
 const detectVi = (str) => {
   const AccentsMap = [
@@ -32,23 +33,23 @@ const detectVi = (str) => {
   return false;
 };
 
-const download = function (url, dest, cb) {
-  var file = fs.createWriteStream(dest);
-  try {
-    var request = https
-      .get(url, function (response) {
-        response.pipe(file);
-        file.on("finish", function () {
-          file.close(cb);
-        });
-      })
-      .on("error", function (error) {
-        console.log("a", error.message);
-      });
-  } catch (e) {
-    console.log("b", e);
-  }
-};
+// const download = function (url, dest, cb) {
+//   var file = fs.createWriteStream(dest);
+//   try {
+//     var request = https
+//       .get(url, function (response) {
+//         response.pipe(file);
+//         file.on("finish", function () {
+//           file.close(cb);
+//         });
+//       })
+//       .on("error", function (error) {
+//         console.log("a", error.message);
+//       });
+//   } catch (e) {
+//     console.log("b", e);
+//   }
+// };
 
 const pp = puppeteer.launch({ args: ["--no-sandbox"] });
 
@@ -226,7 +227,9 @@ const getGirl = (name, cb) => {
   request(url).then((data) => {
     const rs = data.match(/\"link\"\:\"(.*?)\"/);
     if (rs[1]) {
-      download(rs[1], __dirname + `/girls/${name}.jpg`, function () {
+      const link = rs[1].replace(/\\/g, "");
+      console.log(link);
+      download(link, __dirname + `/girls/${name}.jpg`, function () {
         console.log();
         cb(name);
       });
