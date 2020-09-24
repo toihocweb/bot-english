@@ -6,31 +6,8 @@ const puppeteer = require("puppeteer");
 const https = require("https");
 const download = require("./download");
 const helps = require("./help");
-const detectVi = (str) => {
-  const AccentsMap = [
-    "aàảãáạăằẳẵắặâầẩẫấậ",
-    "AÀẢÃÁẠĂẰẲẴẮẶÂẦẨẪẤẬ",
-    "dđ",
-    "DĐ",
-    "eèẻẽéẹêềểễếệ",
-    "EÈẺẼÉẸÊỀỂỄẾỆ",
-    "iìỉĩíị",
-    "IÌỈĨÍỊ",
-    "oòỏõóọôồổỗốộơờởỡớợ",
-    "OÒỎÕÓỌÔỒỔỖỐỘƠỜỞỠỚỢ",
-    "uùủũúụưừửữứự",
-    "UÙỦŨÚỤƯỪỬỮỨỰ",
-    "yỳỷỹýỵ",
-    "YỲỶỸÝỴ",
-  ];
-  for (let i = 0; i < AccentsMap.length; i++) {
-    let re = new RegExp("[" + AccentsMap[i].substr(1) + "]", "g");
-    if (re.test(str)) {
-      return true;
-    }
-  }
-  return false;
-};
+const { detectVi } = require("./detectVi");
+const { translateMicrosoft, translateViki } = require("./tranlate");
 
 const pp = puppeteer.launch({ args: ["--no-sandbox"] });
 
@@ -100,6 +77,11 @@ const start = () => {
                 }
               });
               break;
+            case "/tr":
+              translate(word.join(" ")).then((data) => {
+                api.sendMessage(`😉 ${data.join("\n😉 ")}`, event.threadID);
+              });
+              break;
             case "/rd":
               rdSentences(...word)
                 .then((data) => {
@@ -129,6 +111,11 @@ const start = () => {
       });
     }
   );
+};
+
+const translate = async (sen) => {
+  const data = await Promise.all([translateMicrosoft(sen), translateViki(sen)]);
+  return data;
 };
 
 const getSound = (word, cb) => {
@@ -238,8 +225,10 @@ const getGirl = (name, cb) => {
   });
 };
 
-const rdSentences = (contain = "", quantity = 4, count = 10) => {
-  const url = `https://www.randomwordgenerator.org/Random/sentence_generator/quantity/${quantity}/count/${count}/contain/${contain}`;
+const rdSentences = (quantity = 4, count = 10, contain = "") => {
+  const url = `https://www.randomwordgenerator.org/Random/sentence_generator/quantity/${
+    isNaN(quantity) ? 4 : quantity
+  }/count/${count}/contain/${contain}`;
   return new Promise((resolve, reject) => {
     request(url)
       .then((data) => {
@@ -255,6 +244,3 @@ const rdSentences = (contain = "", quantity = 4, count = 10) => {
 };
 
 start();
-// rdSentences();
-// getSound("hello");
-// glosble("code");

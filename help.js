@@ -6,4 +6,5 @@ module.exports = [
   `💀 /girl: -> random a girl`,
   `💀 /def [từ]: -> định nghĩa 1 [từ]`,
   `💀 /rd [từ] [a] [b]: -> random [a] câu có độ dài [b] chứa [từ]`,
+  `💀 /tr [sentence]: -> dịch [sentence] ra tiếng anh hoặc tiếng việt`,
 ];
