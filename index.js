@@ -24,7 +24,7 @@ const start = () => {
         if (event.type === "message") {
           if (backlist.some((val) => event.body.trim().includes(val))) {
             api.sendMessage(
-              "Xin lỗi, chúng ta không thuộc về nhau..😗",
+              "Xin lỗi bạn, chúng ta không thuộc về nhau..😗",
               event.threadID
             );
           }
@@ -104,7 +104,7 @@ const start = () => {
                 );
               break;
             case "/backlist":
-              addToBackList(word);
+              addToBackList(word.join(" "));
               break;
             case "/girl":
               const name = new Date().getTime();
@@ -125,7 +125,7 @@ const start = () => {
 };
 
 const addToBackList = (word) => {
-  backlist = [...backlist, ...word];
+  backlist = [...backlist, word];
 };
 
 const translate = async (sen) => {
