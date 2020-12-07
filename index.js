@@ -11,7 +11,7 @@ const { translateMicrosoft, translateViki } = require("./tranlate");
 
 const pp = puppeteer.launch({ args: ["--no-sandbox"] });
 
-var backlist = [];
+var blacklist = [];
 
 const start = () => {
   login(
@@ -22,7 +22,13 @@ const start = () => {
       const stopListening = api.listenMqtt((err, event) => {
         if (err) return console.error(err);
         if (event.type === "message") {
-          if (backlist.some((val) => event.body.trim().includes(val))) {
+          console.log(event.body);
+          console.log(blacklist);
+          if (
+            blacklist.some((val) =>
+              event.body.trim().toLowerCase().includes(val.toLowerCase())
+            )
+          ) {
             api.sendMessage(
               "Xin lỗi bạn, chúng ta không thuộc về nhau..😗",
               event.threadID
@@ -103,7 +109,7 @@ const start = () => {
                   api.sendMessage("💩 no results", event.threadID)
                 );
               break;
-            case "/backlist":
+            case "/blacklist":
               addToBackList(word.join(" "));
               break;
             case "/girl":
@@ -125,7 +131,8 @@ const start = () => {
 };
 
 const addToBackList = (word) => {
-  backlist = [...backlist, word];
+  console.log("word", word);
+  blacklist = [...blacklist, word];
 };
 
 const translate = async (sen) => {
