@@ -11,6 +11,8 @@ const { translateMicrosoft, translateViki } = require("./tranlate");
 
 const pp = puppeteer.launch({ args: ["--no-sandbox"] });
 
+var backlist = [];
+
 const start = () => {
   login(
     { appState: JSON.parse(fs.readFileSync("appstate.json", "utf8")) },
@@ -20,6 +22,12 @@ const start = () => {
       const stopListening = api.listenMqtt((err, event) => {
         if (err) return console.error(err);
         if (event.type === "message") {
+          if (backlist.some((val) => event.body.trim().includes(val))) {
+            api.sendMessage(
+              "Xin lỗi, chúng ta không thuộc về nhau..😗",
+              event.threadID
+            );
+          }
           const commands = event.body.trim().split(" ");
           const [cmd, ...word] = commands;
           switch (cmd) {
@@ -95,6 +103,9 @@ const start = () => {
                   api.sendMessage("💩 no results", event.threadID)
                 );
               break;
+            case "/backlist":
+              addToBackList(word);
+              break;
             case "/girl":
               const name = new Date().getTime();
               getGirl(name, function (a) {
@@ -111,6 +122,10 @@ const start = () => {
       });
     }
   );
+};
+
+const addToBackList = (word) => {
+  backlist = [...backlist, ...word];
 };
 
 const translate = async (sen) => {
