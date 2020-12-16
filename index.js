@@ -43,6 +43,7 @@ const start = () => {
               break;
             case "/vocaf":
               fs.writeFileSync("./voca.txt", "");
+              break;
             case "/vi":
               glosble(word.join(" "), "vi")
                 .then((data) => {
