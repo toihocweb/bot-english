@@ -39,11 +39,27 @@ const start = () => {
                   api.sendMessage("😗 " + data, event.threadID);
                 });
               }
-              fs.appendFileSync("./voca.txt", word);
+              fs.appendFileSync("./voca.txt", '\n' + word.join('\n'));
               break;
             case "/vocaf":
               fs.writeFileSync("./voca.txt", "");
               break;
+            case "/review":
+                fs.readFile('./voca.txt', 'utf8', (err,data) => {
+                    const newData = data.trim().split('\n')
+                    var missWords = []
+                    const total = newData.reduce((acc, val) => {
+                        if (word.includes(val)) {
+                            acc = acc + 1
+                        } else {
+                            missWords.push(val)
+                        }
+                        return acc
+                    }, 0)
+                    api.sendMessage(`💩 You passed ${total}/${newData.length} - missed Words: ${missWords}`, event.threadID)
+                    missWords.length = 0
+                })
+                break;
             case "/vi":
               glosble(word.join(" "), "vi")
                 .then((data) => {
