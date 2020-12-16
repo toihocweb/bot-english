@@ -11,8 +11,6 @@ const { translateMicrosoft, translateViki } = require("./tranlate");
 
 const pp = puppeteer.launch({ args: ["--no-sandbox"] });
 
-var blacklist = [];
-
 const start = () => {
   login(
     { appState: JSON.parse(fs.readFileSync("appstate.json", "utf8")) },
@@ -21,19 +19,8 @@ const start = () => {
       api.setOptions({ listenEvents: true, selfListen: true });
       const stopListening = api.listenMqtt((err, event) => {
         if (err) return console.error(err);
+
         if (event.type === "message") {
-          console.log(event.body);
-          console.log(blacklist);
-          if (
-            blacklist.some((val) =>
-              event.body.trim().toLowerCase().includes(val.toLowerCase())
-            )
-          ) {
-            api.sendMessage(
-              "Xin lỗi bạn, chúng ta không thuộc về nhau..😗",
-              event.threadID
-            );
-          }
           const commands = event.body.trim().split(" ");
           const [cmd, ...word] = commands;
           switch (cmd) {
@@ -45,6 +32,14 @@ const start = () => {
                 .catch((err) =>
                   api.sendMessage("💩 no results", event.threadID)
                 );
+              break;
+            case "/voca":
+              if (!word.length) {
+                fs.readFile("./voca.txt", "utf8", (err, data) => {
+                  api.sendMessage("😗 " + data, event.threadID);
+                });
+              }
+              fs.appendFileSync("./voca.txt", word);
               break;
             case "/vi":
               glosble(word.join(" "), "vi")
