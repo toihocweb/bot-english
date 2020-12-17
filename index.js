@@ -33,6 +33,11 @@ const start = () => {
                   api.sendMessage("💩 no results", event.threadID)
                 );
               break;
+            case "/dif":
+                dif(word[0], word[1]).then(data => api.sendMessage("😗 " + data, event.threadID)).catch((err) =>
+                api.sendMessage("💩 no results", event.threadID)
+              );
+            break;
             case "/voca":
               if (!word.length) {
                 fs.readFile("./voca.txt", "utf8", (err, data) => {
@@ -73,15 +78,6 @@ const start = () => {
               getEx(word.join(" "))
                 .then((data) => {
                   api.sendMessage("😗 " + data.join("\n😀"), event.threadID);
-                })
-                .catch((err) =>
-                  api.sendMessage("💩 no results", event.threadID)
-                );
-              break;
-            case "/def":
-              def(word.join(" "))
-                .then((data) => {
-                  api.sendMessage("😗 " + data, event.threadID);
                 })
                 .catch((err) =>
                   api.sendMessage("💩 no results", event.threadID)
@@ -200,22 +196,6 @@ const glosble = (word, lang) => {
   });
 };
 
-const def = (word) => {
-  const vi = detectVi(word);
-  const url = `https://www.yourdictionary.com/${word}`;
-  return new Promise((resolve, reject) => {
-    if (vi) {
-      resolve("no result");
-    } else {
-      request(url)
-        .then((data) => {
-          const $ = cheerio.load(data);
-          resolve($(".custom_entry").text());
-        })
-        .catch((err) => reject(err));
-    }
-  });
-};
 
 const getEx = (word) => {
   const vi = detectVi(word);
@@ -278,5 +258,15 @@ const rdSentences = (quantity = 4, count = 10, contain = "") => {
       .catch((err) => reject(err));
   });
 };
+
+const dif = (firstWord, secondWord) => {
+    const url = `https://wikidiff.com/${firstWord}/${secondWord}`
+    return new Promise((resolve, reject) => {
+        request(url).then(data => {
+            const $ = cheerio.load(data);
+            resolve($(".differencebetween").text())
+        })        
+    }).catch(err => reject(err))
+}
 
 start();
